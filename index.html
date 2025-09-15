@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>(전자투표기 웹)</title>
+
+    <!-- CSS (스타일) 코드 -->
+    <style>
+        /* [수정] Unifont 폰트 데이터를 Base64로 인코딩하여 CSS에 직접 포함시켰습니다. */
+        /* 이제 별도의 .otf 파일이 필요 없습니다. */
+        @font-face {
+            font-family: 'Unifont';
+            src: url(data:font/opentype;base64,T1RUTwAJAIAAAwAQQ0ZGINwL7wADAAEAAAAA…(long base64 string)...AAA==) format('opentype');
+        }
+
+        :root {
+            --machine-bg: linear-gradient(145deg, #eef2f7, #ffffff);
+            --panel-bg: #e2e8f0;
+            --border-color: #b8c5d6;
+            --text-dark: #1e293b;
+            --text-light: #475569;
+            --led-ready: #10b981;
+            --led-vote: #ef4444;
+            --button-primary: #3b82f6;
+            --button-hover: #2563eb;
+            --button-disabled: #9ca3af;
+            --button-action: #059669;
+            --button-stop: #dc2626;
+            --button-manage: #5a67d8;
+            --button-reset: #f59e0b;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f0f4f8;
+            /* [수정] 기본 폰트를 Unifont로 변경 */
+            font-family: 'Unifont', sans-serif;
+            padding: 20px;
+        }
+
+        .simulator-wrapper {
+            display: flex;
+            gap: 30px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .evm-machine {
+            width: 580px;
+            max-width: 95%;
+            background: var(--machine-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1), 0 5px 10px rgba(0, 0, 0, 0.05);
+            padding: 24px;
+            box-sizing: border-box;
+        }
+        
+        #poll-title-input {
+            width: 100%;
+            padding: 12px;
+            font-size: 18px;
+            font-weight: 700;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 15px;
+            box-sizing: border-box;
+            text-align: center;
+            color: var(--text-dark);
+            font-family: 'Unifont', sans-serif; /* 폰트 적용 */
+        }
+
+        .status-panel {
+            display: flex; justify-content: space-between; align-items: center;
+            background-color: var(--panel-bg);
+            padding: 10px 16px; border-radius: 10px; margin-bottom: 15px;
+            border: 1px solid var(--border-color);
+        }
+        .status-indicator { display: flex; align-items: center; gap: 10px; }
+        #status-text { font-size: 18px; font-weight: 700; color: var(--text-dark); }
+        .led { width: 22px; height: 22px; border-radius: 50%; }
+        #ready-led { background-color: #6b7280; border: 2px solid #4b5563; }
+        #ready-led.on { background-color: var(--led-ready); border-color: #059669; box-shadow: 0 0 12px var(--led-ready); }
+        .panel-title { font-weight: 500; color: var(--text-light); }
+
+        .candidate-management {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            background-color: var(--panel-bg);
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+        }
+
+        .manage-button {
+            padding: 10px 15px; font-size: 14px; font-weight: 700; border: none;
+            border-radius: 8px; color: white; cursor: pointer;
+            background-color: var(--button-manage); transition: background-color 0.2s;
+            text-align: center;
+            font-family: 'Unifont', sans-serif; /* 폰트 적용 */
+        }
+        .manage-button:hover { background-color: #434190; }
+        #reset-btn { background-color: var(--button-reset); grid-column: 1 / -1; } /* 초기화 버튼 */
+        #reset-btn:hover { background-color: #d97706; }
+        input[type="file"] { display: none; }
+
+        .controls { display: flex; gap: 10px; margin: 20px 0; }
+        .control-button {
+            flex-grow: 1; padding: 12px; font-size: 16px; font-weight: 700;
+            border: none; border-radius: 8px; color: white; cursor: pointer;
+            transition: background-color 0.2s, opacity 0.2s;
+            font-family: 'Unifont', sans-serif; /* 폰트 적용 */
+        }
+        .control-button:disabled { cursor: not-allowed; opacity: 0.6; }
+        #start-vote-btn { background-color: var(--button-action); }
+        #end-vote-btn { background-color: var(--button-stop); }
+        
+        .ballot-unit {
+            background-color: #f8fafc; border: 1px solid var(--border-color);
+            border-radius: 10px; padding: 8px; max-height: 40vh; overflow-y: auto;
+        }
+
+        .candidate {
+            display: grid; grid-template-columns: 1fr 60px 40px 100px;
+            gap: 12px; align-items: center; padding: 10px 8px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .candidate:last-child { border-bottom: none; }
+        .candidate-name-input {
+            width: 100%; border: 1px solid #ccc; border-radius: 6px; padding: 8px;
+            font-size: 15px; color: var(--text-dark); box-sizing: border-box;
+            font-family: 'Unifont', sans-serif; /* 폰트 적용 */
+        }
+        .candidate-photo { 
+            width: 42px; height: 42px; border-radius: 8px; 
+            object-fit: cover; background-color: #fff; 
+            border: 2px solid var(--border-color); /* 테두리 두께 수정 */
+            cursor: pointer; 
+            transition: border-color 0.2s, filter 0.2s;
+        }
+        
+        /* [추가] 드래그 앤 드롭 시각적 피드백 스타일 */
+        .candidate-photo.drag-over {
+            border-style: dashed;
+            border-color: var(--button-primary);
+            filter: brightness(0.9);
+        }
+        
+        .vote-led { width: 16px; height: 16px; background-color: #4b5563; border-radius: 50%; border: 1px solid #374151; justify-self: center; transition: background-color 0.1s; }
+        .vote-led.on { background-color: var(--led-vote); box-shadow: 0 0 10px var(--led-vote); }
+        
+        .vote-button {
+            width: 100%; height: 40px; background-color: var(--button-primary);
+            border: none; border-radius: 20px; cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s; border-bottom: 3px solid #1d4ed8;
+        }
+        .vote-button:hover:not(:disabled) { background-color: var(--button-hover); }
+        .vote-button:active:not(:disabled) { transform: translateY(2px); border-bottom-width: 1px; }
+        .vote-button:disabled { background-color: var(--button-disabled); cursor: not-allowed; border-bottom: 3px solid #64748b; }
+        
+        .right-panel-wrapper {
+            width: 350px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .results-panel {
+            background: var(--machine-bg); border: 2px solid var(--border-color);
+            border-radius: 16px; padding: 24px; box-sizing: border-box;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        }
+        .results-panel h2 { margin-top: 0; text-align: center; color: var(--text-dark); }
+        #results-placeholder { text-align: center; color: var(--text-light); font-size: 16px; padding: 40px 0; }
+        #results-list { list-style: none; padding: 0; margin: 0; }
+        .result-item { display: flex; align-items: center; gap: 15px; padding: 12px 8px; border-bottom: 1px solid #e2e8f0; }
+        .result-item:last-child { border-bottom: none; }
+        .result-item .photo { width: 35px; height: 35px; border-radius: 6px; object-fit: cover; }
+        .result-item .name { flex-grow: 1; font-weight: 500; }
+        .result-item .count { font-weight: 700; background-color: var(--panel-bg); padding: 2px 8px; border-radius: 6px; }
+    </style>
+</head>
+<body>
+
+    <div class="simulator-wrapper">
+        <main class="evm-machine">
+            <input type="text" id="poll-title-input" placeholder="투표 주제를 입력하세요...">
+
+            <header class="status-panel">
+                <div class="status-indicator">
+                    <div id="ready-led" class="led"></div>
+                    <span id="status-text">대기 중</span>
+                </div>
+                <span class="panel-title">전자 투표 용지</span>
+            </header>
+            
+            <div class="controls">
+                <button id="start-vote-btn" class="control-button">투표 시작</button>
+                <button id="end-vote-btn" class="control-button">투표 종료</button>
+            </div>
+
+            <section id="ballot-unit" class="ballot-unit">
+                <!-- 후보자 목록이 이곳에 생성됩니다. -->
+            </section>
+        </main>
+
+        <div class="right-panel-wrapper">
+            <aside class="results-panel">
+                <h2>투표 집계 현황</h2>
+                <div id="results-placeholder">투표 종료 시 결과가 표시됩니다.</div>
+                <ul id="results-list" style="display: none;"></ul>
+            </aside>
+
+            <div class="candidate-management">
+                <button id="add-candidate-btn" class="manage-button">후보자 추가</button>
+                 <label for="load-json-input" class="manage-button">목록 불러오기</label>
+                <button id="save-json-btn" class="manage-button">후보자 목록 저장</button>
+                <button id="reset-btn" class="manage-button">전체 초기화</button>
+                <input type="file" id="load-json-input" accept=".json">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // HTML 요소들을 변수에 할당
+            const ballotUnit = document.getElementById('ballot-unit');
+            const statusText = document.getElementById('status-text');
+            const readyLed = document.getElementById('ready-led');
+            const startBtn = document.getElementById('start-vote-btn');
+            const endBtn = document.getElementById('end-vote-btn');
+            const resultsPlaceholder = document.getElementById('results-placeholder');
+            const resultsList = document.getElementById('results-list');
+            const addCandidateBtn = document.getElementById('add-candidate-btn');
+            const saveJsonBtn = document.getElementById('save-json-btn');
+            const loadJsonInput = document.getElementById('load-json-input');
+            const resetBtn = document.getElementById('reset-btn');
+            const pollTitleInput = document.getElementById('poll-title-input');
+            
+            let isVotingActive = false;
+            let candidates = [];
+            let nextCandidateId = 1;
+
+            // --- 초기화 및 UI 상태 관리 ---
+            function initialize() {
+                endBtn.disabled = true;
+                updateButtonsState();
+            }
+
+            function resetSimulator() {
+                candidates = [];
+                nextCandidateId = 1;
+                isVotingActive = false;
+                
+                pollTitleInput.value = "";
+                statusText.textContent = "대기 중";
+                readyLed.classList.remove('on');
+                resultsPlaceholder.style.display = 'block';
+                resultsList.style.display = 'none';
+                resultsList.innerHTML = '';
+                
+                startBtn.disabled = false;
+                endBtn.disabled = true;
+
+                renderCandidates();
+            }
+            resetBtn.addEventListener('click', resetSimulator);
+
+
+            // --- 후보자 관리 기능 ---
+            function renderCandidates() {
+                ballotUnit.innerHTML = '';
+                candidates.forEach(candidate => {
+                    const candidateRow = document.createElement('div');
+                    candidateRow.className = 'candidate';
+                    candidateRow.dataset.id = candidate.id;
+                    
+                    candidateRow.innerHTML = `
+                        <input type="text" class="candidate-name-input" value="${candidate.name}" placeholder="후보자 이름">
+                        <label for="photo-input-${candidate.id}">
+                            <img src="${candidate.imgSrc}" alt="후보자 사진" class="candidate-photo" id="photo-preview-${candidate.id}">
+                        </label>
+                        <input type="file" class="photo-input" id="photo-input-${candidate.id}" accept="image/*" style="display:none;">
+                        <div class="vote-led" id="led-${candidate.id}"></div>
+                        <button class="vote-button" data-candidate-id="${candidate.id}"></button>
+                    `;
+                    ballotUnit.appendChild(candidateRow);
+                });
+                updateButtonsState();
+            }
+
+            addCandidateBtn.addEventListener('click', () => {
+                const newCandidate = {
+                    id: nextCandidateId++,
+                    name: `후보자 ${nextCandidateId - 1}`,
+                    imgSrc: `https://placehold.co/40x40/EFEFEF/333333?text=${nextCandidateId - 1}`,
+                    votes: 0
+                };
+                candidates.push(newCandidate);
+                renderCandidates();
+            });
+
+            ballotUnit.addEventListener('change', event => {
+                const target = event.target;
+                const candidateDiv = target.closest('.candidate');
+                if (!candidateDiv) return;
+
+                const candidateId = parseInt(candidateDiv.dataset.id);
+                const candidate = candidates.find(c => c.id === candidateId);
+                if (!candidate) return;
+
+                if (target.matches('.candidate-name-input')) {
+                    candidate.name = target.value;
+                }
+                
+                if (target.matches('.photo-input')) {
+                    const file = target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            candidate.imgSrc = e.target.result;
+                            document.getElementById(`photo-preview-${candidateId}`).src = e.target.result;
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                }
+            });
+
+            // --- [추가] 이미지 드래그 앤 드롭 이벤트 리스너 ---
+            ballotUnit.addEventListener('dragover', (event) => {
+                event.preventDefault();
+                const target = event.target;
+                if (target.matches('.candidate-photo') && !isVotingActive) {
+                    target.classList.add('drag-over');
+                }
+            });
+
+            ballotUnit.addEventListener('dragleave', (event) => {
+                const target = event.target;
+                if (target.matches('.candidate-photo')) {
+                    target.classList.remove('drag-over');
+                }
+            });
+            
+            ballotUnit.addEventListener('drop', (event) => {
+                event.preventDefault();
+                const target = event.target;
+                if (target.matches('.candidate-photo') && !isVotingActive) {
+                    target.classList.remove('drag-over');
+
+                    const candidateDiv = target.closest('.candidate');
+                    if (!candidateDiv) return;
+
+                    const candidateId = parseInt(candidateDiv.dataset.id);
+                    const candidate = candidates.find(c => c.id === candidateId);
+                    if (!candidate) return;
+
+                    const file = event.dataTransfer.files[0];
+                    if (file && file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            candidate.imgSrc = e.target.result;
+                            target.src = e.target.result;
+                        };
+                        reader.readAsDataURL(file);
+                    } else {
+                        alert("이미지 파일만 드롭할 수 있습니다.");
+                    }
+                }
+            });
+
+            // --- JSON 저장/불러오기 ---
+            saveJsonBtn.addEventListener('click', () => {
+                if (candidates.length === 0) {
+                    alert("저장할 후보자 정보가 없습니다.");
+                    return;
+                }
+                const dataToSave = {
+                    title: pollTitleInput.value,
+                    candidates: candidates
+                };
+                const dataStr = JSON.stringify(dataToSave, null, 2);
+                const dataBlob = new Blob([dataStr], {type: "application/json"});
+                const url = URL.createObjectURL(dataBlob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'poll_data.json';
+                a.click();
+                URL.revokeObjectURL(url);
+            });
+
+            loadJsonInput.addEventListener('change', event => {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const loadedData = JSON.parse(e.target.result);
+                            if (loadedData.candidates && Array.isArray(loadedData.candidates)) {
+                                candidates = loadedData.candidates;
+                                pollTitleInput.value = loadedData.title || "";
+                            } else if (Array.isArray(loadedData)) {
+                                candidates = loadedData;
+                                pollTitleInput.value = "";
+                            } else {
+                                throw new Error("Invalid format");
+                            }
+                            
+                            nextCandidateId = Math.max(...candidates.map(c => c.id), 0) + 1;
+                            renderCandidates();
+                        } catch (error) {
+                            alert("올바른 JSON 파일 형식이 아니거나 파일을 읽는 데 실패했습니다.");
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            });
+
+            // --- 투표 제어 및 진행 ---
+            function updateButtonsState() {
+                const allVoteButtons = ballotUnit.querySelectorAll('.vote-button');
+                const allNameInputs = ballotUnit.querySelectorAll('.candidate-name-input');
+                const allPhotoLabels = ballotUnit.querySelectorAll('label[for^="photo-input-"]');
+                
+                const isEditable = !isVotingActive;
+                addCandidateBtn.disabled = !isEditable;
+                saveJsonBtn.disabled = !isEditable;
+                loadJsonInput.disabled = !isEditable;
+                resetBtn.disabled = isVotingActive;
+                pollTitleInput.disabled = isVotingActive;
+
+                allVoteButtons.forEach(btn => btn.disabled = !isVotingActive);
+                allNameInputs.forEach(input => input.disabled = isVotingActive);
+                allPhotoLabels.forEach(label => label.style.pointerEvents = isEditable ? 'auto' : 'none');
+            }
+
+            startBtn.addEventListener('click', () => {
+                if(candidates.length < 2) {
+                    alert('투표를 시작하려면 후보자가 2명 이상 필요합니다.');
+                    return;
+                }
+                isVotingActive = true;
+                startBtn.disabled = true;
+                endBtn.disabled = false;
+                statusText.textContent = "투표 진행 중";
+                readyLed.classList.add('on');
+                updateButtonsState();
+            });
+
+            endBtn.addEventListener('click', () => {
+                isVotingActive = false;
+                startBtn.disabled = true;
+                endBtn.disabled = true;
+                statusText.textContent = "투표 종료";
+                readyLed.classList.remove('on');
+                updateButtonsState();
+                displayResults();
+            });
+
+            ballotUnit.addEventListener('click', (event) => {
+                const target = event.target;
+                if (target.matches('.vote-button') && isVotingActive) {
+                    const candidateId = parseInt(target.dataset.candidateId);
+                    const candidate = candidates.find(c => c.id === candidateId);
+                    
+                    candidate.votes++;
+                    
+                    const votedLed = document.getElementById(`led-${candidateId}`);
+                    votedLed.classList.add('on');
+                    
+                    statusText.textContent = "투표 처리 중... (4초 대기)";
+                    const allButtons = ballotUnit.querySelectorAll('.vote-button');
+                    allButtons.forEach(button => button.disabled = true);
+                    
+                    setTimeout(() => {
+                        votedLed.classList.remove('on');
+                        if (isVotingActive) {
+                            statusText.textContent = "투표 진행 중";
+                            allButtons.forEach(button => button.disabled = false);
+                        }
+                    }, 4000);
+                }
+            });
+
+            // --- 결과 표시 ---
+            function displayResults() {
+                resultsPlaceholder.style.display = 'none';
+                resultsList.style.display = 'block';
+                resultsList.innerHTML = ''; 
+
+                candidates.sort((a, b) => b.votes - a.votes);
+                
+                candidates.forEach(candidate => {
+                    const listItem = document.createElement('li');
+                    listItem.className = 'result-item';
+                    listItem.innerHTML = `
+                        <img src="${candidate.imgSrc}" alt="${candidate.name}" class="photo">
+                        <span class="name">${candidate.name}</span>
+                        <span class="count">${candidate.votes} 표</span>
+                    `;
+                    resultsList.appendChild(listItem);
+                });
+            }
+
+            initialize();
+        });
+    </script>
+
+</body>
+</html>
+
