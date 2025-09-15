@@ -510,7 +510,7 @@
                 resultsPlaceholder.style.display = 'none';
                 resultsList.style.display = 'block';
                 totalVotesDisplay.style.display = 'block';
-                displayResults(); 
+                displayResults(false); 
 
                 updateButtonsState();
             });
@@ -523,7 +523,7 @@
                 statusText.textContent = "투표 종료";
                 readyLed.classList.remove('on');
                 updateButtonsState();
-                displayResults();
+                displayResults(true);
                 resultsPlaceholder.innerHTML = `최종 결과`;
             });
             
@@ -554,7 +554,7 @@
                     
                     candidate.votes++;
                     
-                    displayResults();
+                    displayResults(false);
 
                     const votedLed = document.getElementById(`led-${candidateId}`);
                     votedLed.classList.add('on');
@@ -573,7 +573,8 @@
                 }
             });
 
-            function displayResults() {
+            // [수정] 득표수 표시 여부를 인자로 받도록 변경
+            function displayResults(showCounts) {
                 resultsPlaceholder.style.display = 'none';
                 resultsList.style.display = 'block';
                 resultsList.innerHTML = ''; 
@@ -587,11 +588,14 @@
                 candidates.forEach(candidate => {
                     const listItem = document.createElement('li');
                     listItem.className = 'result-item';
-                    // [수정] 결과 표시에 개별 득표수(`span.count`)를 다시 추가
+                    
+                    // [수정] showCounts 값에 따라 득표수 표시를 동적으로 결정
+                    const countHTML = showCounts ? `<span class="count">${candidate.votes} 표</span>` : '';
+                    
                     listItem.innerHTML = `
                         <img src="${candidate.imgSrc}" alt="${candidate.name}" class="photo">
                         <span class="name">${candidate.name}</span>
-                        <span class="count">${candidate.votes} 표</span>
+                        ${countHTML}
                     `;
                     resultsList.appendChild(listItem);
                 });
