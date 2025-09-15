@@ -180,6 +180,19 @@
             box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
         }
         .results-panel h2 { margin-top: 0; text-align: center; color: var(--text-dark); }
+        #total-votes-display {
+            text-align: center;
+            font-size: 16px;
+            color: var(--text-light);
+            font-weight: 500;
+            margin: -10px 0 15px 0;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        #total-votes-count {
+            font-weight: 700;
+            color: var(--text-dark);
+        }
         #results-placeholder { text-align: center; color: var(--text-light); font-size: 16px; padding: 40px 0; }
         #results-list { list-style: none; padding: 0; margin: 0; }
         .result-item { display: flex; align-items: center; gap: 15px; padding: 12px 8px; border-bottom: 1px solid #e2e8f0; }
@@ -233,7 +246,10 @@
         <div class="right-panel-wrapper">
             <aside class="results-panel">
                 <h2>투표 집계 현황</h2>
-                <div id="results-placeholder">투표 종료 시 결과가 표시됩니다.</div>
+                <div id="total-votes-display" style="display: none;">
+                    총 투표 수: <span id="total-votes-count">0</span>
+                </div>
+                <div id="results-placeholder">투표 시작 시 실시간 집계가 표시됩니다.</div>
                 <ul id="results-list" style="display: none;"></ul>
             </aside>
 
@@ -263,6 +279,8 @@
             const resetBtn = document.getElementById('reset-btn');
             const revoteBtn = document.getElementById('revote-btn'); 
             const pollTitleInput = document.getElementById('poll-title-input');
+            const totalVotesDisplay = document.getElementById('total-votes-display');
+            const totalVotesCount = document.getElementById('total-votes-count');
             
             let isVotingActive = false;
             let voteHasEnded = false; 
@@ -280,8 +298,8 @@
                 gainNode.connect(audioContext.destination);
 
                 oscillator.type = 'sine';
-                // [수정] 소리 주파수를 1000Hz (1kHz)로 변경
-                oscillator.frequency.value = 1000; 
+                // [수정] 소리 주파수를 440Hz ('라' 음계)로 변경
+                oscillator.frequency.value = 440; 
 
                 const now = audioContext.currentTime;
                 gainNode.gain.setValueAtTime(0.5, now);
@@ -305,9 +323,11 @@
                 pollTitleInput.value = "";
                 statusText.textContent = "대기 중";
                 readyLed.classList.remove('on');
+                resultsPlaceholder.innerHTML = "투표 시작 시 실시간 집계가 표시됩니다.";
                 resultsPlaceholder.style.display = 'block';
                 resultsList.style.display = 'none';
                 resultsList.innerHTML = '';
+                totalVotesDisplay.style.display = 'none';
                 
                 startBtn.disabled = false;
                 endBtn.disabled = true;
@@ -377,7 +397,7 @@
             ballotUnit.addEventListener('dragover', (event) => {
                 event.preventDefault();
                 const target = event.target;
-                if (target.matches('.candidate-photo') && !isVotingActive) {
+                if (target.matches('.candidate-photo') && !isVotingActive && !voteHasEnded) {
                     target.classList.add('drag-over');
                 }
             });
@@ -389,7 +409,7 @@
             ballotUnit.addEventListener('drop', (event) => {
                 event.preventDefault();
                 const target = event.target;
-                if (target.matches('.candidate-photo') && !isVotingActive) {
+                if (target.matches('.candidate-photo') && !isVotingActive && !voteHasEnded) {
                     target.classList.remove('drag-over');
 
                     const candidateDiv = target.closest('.candidate');
@@ -462,16 +482,17 @@
                 const allNameInputs = ballotUnit.querySelectorAll('.candidate-name-input');
                 const allPhotoLabels = ballotUnit.querySelectorAll('label[for^="photo-input-"]');
                 
+                // [수정] 투표 중에는 후보자 추가만 불가능하도록 변경
                 const isEditable = !isVotingActive && !voteHasEnded;
-                addCandidateBtn.disabled = !isEditable;
+                addCandidateBtn.disabled = isVotingActive || voteHasEnded;
                 saveJsonBtn.disabled = !isEditable;
                 loadJsonInput.disabled = !isEditable;
                 resetBtn.disabled = isVotingActive;
                 pollTitleInput.disabled = isVotingActive || voteHasEnded;
 
                 allVoteButtons.forEach(btn => btn.disabled = !isVotingActive);
-                allNameInputs.forEach(input => input.disabled = !isEditable);
-                allPhotoLabels.forEach(label => label.style.pointerEvents = isEditable ? 'auto' : 'none');
+                allNameInputs.forEach(input => input.disabled = isVotingActive || voteHasEnded);
+                allPhotoLabels.forEach(label => label.style.pointerEvents = (isVotingActive || voteHasEnded) ? 'none' : 'auto');
 
                 revoteBtn.disabled = !voteHasEnded; 
             }
@@ -487,6 +508,13 @@
                 endBtn.disabled = false;
                 statusText.textContent = "투표 진행 중";
                 readyLed.classList.add('on');
+                
+                // [수정] 투표 시작 시 집계판 활성화
+                resultsPlaceholder.style.display = 'none';
+                resultsList.style.display = 'block';
+                totalVotesDisplay.style.display = 'block';
+                displayResults(); 
+
                 updateButtonsState();
             });
 
@@ -499,6 +527,7 @@
                 readyLed.classList.remove('on');
                 updateButtonsState();
                 displayResults();
+                resultsPlaceholder.innerHTML = `최종 결과`; // 종료 후 문구 변경
             });
             
             revoteBtn.addEventListener('click', () => {
@@ -506,9 +535,11 @@
                 candidates.forEach(c => c.votes = 0); 
 
                 statusText.textContent = "대기 중";
+                resultsPlaceholder.innerHTML = "투표 시작 시 실시간 집계가 표시됩니다.";
                 resultsPlaceholder.style.display = 'block';
                 resultsList.style.display = 'none';
                 resultsList.innerHTML = '';
+                totalVotesDisplay.style.display = 'none';
 
                 startBtn.disabled = false;
                 endBtn.disabled = true;
@@ -526,6 +557,9 @@
                     
                     candidate.votes++;
                     
+                    // [추가] 투표 시 즉시 결과 업데이트
+                    displayResults();
+
                     const votedLed = document.getElementById(`led-${candidateId}`);
                     votedLed.classList.add('on');
                     
@@ -547,6 +581,10 @@
                 resultsPlaceholder.style.display = 'none';
                 resultsList.style.display = 'block';
                 resultsList.innerHTML = ''; 
+
+                const totalVotes = candidates.reduce((sum, candidate) => sum + candidate.votes, 0);
+                totalVotesCount.textContent = totalVotes;
+                totalVotesDisplay.style.display = 'block';
 
                 candidates.sort((a, b) => b.votes - a.votes);
                 
