@@ -3,15 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>전자투표기 시뮬레이터 (Unifont 내장)</title>
+    <title>전자투표기 시뮬레이터</title>
 
     <!-- CSS (스타일) 코드 -->
     <style>
-        /* [수정] Unifont 폰트를 WOFF 형식으로 변환하고 Base64로 인코딩하여 CSS에 직접 포함시켰습니다. */
-        /* 이 방식은 웹에 더 최적화되어 있으며, 별도의 폰트 파일이 필요 없습니다. */
+        /* [수정] 모바일 호환성을 위해 안정적인 CDN 웹 폰트로 변경했습니다. */
         @font-face {
-            font-family: 'Unifont';
-            src: url(data:font/woff;base64,T1RUTwAJAIAAAwAQQ0ZGINwL7wADAAEAAAAA…(long base64 string)...AAA==) format('woff');
+            font-family: 'RoundedFixedsys';
+            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/DungGeunMo.woff') format('woff');
+            font-weight: normal;
+            font-display: swap;
         }
 
         :root {
@@ -28,7 +29,7 @@
             --button-action: #059669;
             --button-stop: #dc2626;
             --button-manage: #5a67d8;
-            --button-revote: #7c3aed; /* [추가] 재투표 버튼 색상 */
+            --button-revote: #7c3aed;
             --button-reset: #f59e0b;
         }
 
@@ -39,8 +40,10 @@
             min-height: 100vh;
             margin: 0;
             background-color: #f0f4f8;
-            font-family: 'Unifont', sans-serif;
+            /* [수정] 기본 폰트를 RoundedFixedsys로 변경 */
+            font-family: 'RoundedFixedsys', sans-serif;
             padding: 20px;
+            box-sizing: border-box;
         }
 
         .simulator-wrapper {
@@ -49,11 +52,13 @@
             align-items: flex-start;
             flex-wrap: wrap;
             justify-content: center;
+            width: 100%;
+            max-width: 1000px;
         }
 
         .evm-machine {
             width: 580px;
-            max-width: 95%;
+            max-width: 100%;
             background: var(--machine-bg);
             border: 2px solid var(--border-color);
             border-radius: 16px;
@@ -73,7 +78,7 @@
             box-sizing: border-box;
             text-align: center;
             color: var(--text-dark);
-            font-family: 'Unifont', sans-serif;
+            font-family: 'RoundedFixedsys', sans-serif;
         }
 
         .status-panel {
@@ -104,7 +109,7 @@
             border-radius: 8px; color: white; cursor: pointer;
             background-color: var(--button-manage); transition: background-color 0.2s;
             text-align: center;
-            font-family: 'Unifont', sans-serif;
+            font-family: 'RoundedFixedsys', sans-serif;
         }
         .manage-button:hover:not(:disabled) { filter: brightness(1.1); }
         #revote-btn { background-color: var(--button-revote); }
@@ -116,7 +121,7 @@
             flex-grow: 1; padding: 12px; font-size: 16px; font-weight: 700;
             border: none; border-radius: 8px; color: white; cursor: pointer;
             transition: background-color 0.2s, opacity 0.2s;
-            font-family: 'Unifont', sans-serif;
+            font-family: 'RoundedFixedsys', sans-serif;
         }
         .control-button:disabled { cursor: not-allowed; opacity: 0.6; }
         #start-vote-btn { background-color: var(--button-action); }
@@ -136,7 +141,7 @@
         .candidate-name-input {
             width: 100%; border: 1px solid #ccc; border-radius: 6px; padding: 8px;
             font-size: 15px; color: var(--text-dark); box-sizing: border-box;
-            font-family: 'Unifont', sans-serif;
+            font-family: 'RoundedFixedsys', sans-serif;
         }
         .candidate-photo { 
             width: 42px; height: 42px; border-radius: 8px; 
@@ -184,6 +189,23 @@
         .result-item .photo { width: 35px; height: 35px; border-radius: 6px; object-fit: cover; }
         .result-item .name { flex-grow: 1; font-weight: 500; }
         .result-item .count { font-weight: 700; background-color: var(--panel-bg); padding: 2px 8px; border-radius: 6px; }
+    
+        @media (max-width: 960px) {
+            .simulator-wrapper {
+                flex-direction: column;
+                align-items: center;
+                gap: 20px;
+            }
+
+            .evm-machine, .right-panel-wrapper {
+                width: 100%;
+                max-width: 580px;
+            }
+
+            .ballot-unit {
+                max-height: 50vh;
+            }
+        }
     </style>
 </head>
 <body>
@@ -249,7 +271,6 @@
             let candidates = [];
             let nextCandidateId = 1;
 
-            // --- 초기화 및 UI 상태 관리 ---
             function initialize() {
                 endBtn.disabled = true;
                 updateButtonsState();
@@ -275,8 +296,6 @@
             }
             resetBtn.addEventListener('click', resetSimulator);
 
-
-            // --- 후보자 관리 기능 ---
             function renderCandidates() {
                 ballotUnit.innerHTML = '';
                 candidates.forEach(candidate => {
@@ -335,7 +354,6 @@
                 }
             });
 
-            // --- 이미지 드래그 앤 드롭 이벤트 리스너 ---
             ballotUnit.addEventListener('dragover', (event) => {
                 event.preventDefault();
                 const target = event.target;
@@ -375,7 +393,6 @@
                 }
             });
 
-            // --- JSON 저장/불러오기 ---
             saveJsonBtn.addEventListener('click', () => {
                 if (candidates.length === 0) {
                     alert("저장할 후보자 정보가 없습니다.");
@@ -420,7 +437,6 @@
                 }
             });
 
-            // --- 투표 제어 및 진행 ---
             function updateButtonsState() {
                 const allVoteButtons = ballotUnit.querySelectorAll('.vote-button');
                 const allNameInputs = ballotUnit.querySelectorAll('.candidate-name-input');
@@ -467,7 +483,7 @@
             
             revoteBtn.addEventListener('click', () => {
                 voteHasEnded = false;
-                candidates.forEach(c => c.votes = 0); // 득표수만 초기화
+                candidates.forEach(c => c.votes = 0); 
 
                 statusText.textContent = "대기 중";
                 resultsPlaceholder.style.display = 'block';
@@ -505,7 +521,6 @@
                 }
             });
 
-            // --- 결과 표시 ---
             function displayResults() {
                 resultsPlaceholder.style.display = 'none';
                 resultsList.style.display = 'block';
