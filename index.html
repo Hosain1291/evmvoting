@@ -7,7 +7,6 @@
 
     <!-- CSS (스타일) 코드 -->
     <style>
-        /* [수정] 모바일 호환성을 위해 안정적인 CDN 웹 폰트로 변경했습니다. */
         @font-face {
             font-family: 'RoundedFixedsys';
             src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/DungGeunMo.woff') format('woff');
@@ -40,7 +39,6 @@
             min-height: 100vh;
             margin: 0;
             background-color: #f0f4f8;
-            /* [수정] 기본 폰트를 RoundedFixedsys로 변경 */
             font-family: 'RoundedFixedsys', sans-serif;
             padding: 20px;
             box-sizing: border-box;
@@ -271,6 +269,28 @@
             let candidates = [];
             let nextCandidateId = 1;
 
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            function playBeep(duration) {
+                if (!audioContext) return;
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+
+                oscillator.type = 'sine';
+                // [수정] 소리 주파수를 1000Hz (1kHz)로 변경
+                oscillator.frequency.value = 1000; 
+
+                const now = audioContext.currentTime;
+                gainNode.gain.setValueAtTime(0.5, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+                
+                oscillator.start(now);
+                oscillator.stop(now + duration);
+            }
+
             function initialize() {
                 endBtn.disabled = true;
                 updateButtonsState();
@@ -499,6 +519,8 @@
             ballotUnit.addEventListener('click', (event) => {
                 const target = event.target;
                 if (target.matches('.vote-button') && isVotingActive) {
+                    playBeep(2);
+
                     const candidateId = parseInt(target.dataset.candidateId);
                     const candidate = candidates.find(c => c.id === candidateId);
                     
