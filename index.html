@@ -298,7 +298,6 @@
                 gainNode.connect(audioContext.destination);
 
                 oscillator.type = 'sine';
-                // [수정] 소리 주파수를 1500Hz로 변경
                 oscillator.frequency.value = 1500; 
 
                 const now = audioContext.currentTime;
@@ -588,10 +587,11 @@
                 candidates.forEach(candidate => {
                     const listItem = document.createElement('li');
                     listItem.className = 'result-item';
-                    // [수정] 결과 표시에서 개별 득표수(`span.count`) 제거
+                    // [수정] 결과 표시에 개별 득표수(`span.count`)를 다시 추가
                     listItem.innerHTML = `
                         <img src="${candidate.imgSrc}" alt="${candidate.name}" class="photo">
                         <span class="name">${candidate.name}</span>
+                        <span class="count">${candidate.votes} 표</span>
                     `;
                     resultsList.appendChild(listItem);
                 });
