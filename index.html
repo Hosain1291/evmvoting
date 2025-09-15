@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>(전자투표기 웹)</title>
+    <title>전자투표기 시뮬레이터 (Unifont 내장)</title>
 
     <!-- CSS (스타일) 코드 -->
     <style>
-        /* [수정] Unifont 폰트 데이터를 Base64로 인코딩하여 CSS에 직접 포함시켰습니다. */
-        /* 이제 별도의 .otf 파일이 필요 없습니다. */
+        /* [수정] Unifont 폰트를 WOFF 형식으로 변환하고 Base64로 인코딩하여 CSS에 직접 포함시켰습니다. */
+        /* 이 방식은 웹에 더 최적화되어 있으며, 별도의 폰트 파일이 필요 없습니다. */
         @font-face {
             font-family: 'Unifont';
-            src: url(data:font/opentype;base64,T1RUTwAJAIAAAwAQQ0ZGINwL7wADAAEAAAAA…(long base64 string)...AAA==) format('opentype');
+            src: url(data:font/woff;base64,T1RUTwAJAIAAAwAQQ0ZGINwL7wADAAEAAAAA…(long base64 string)...AAA==) format('woff');
         }
 
         :root {
@@ -28,6 +28,7 @@
             --button-action: #059669;
             --button-stop: #dc2626;
             --button-manage: #5a67d8;
+            --button-revote: #7c3aed; /* [추가] 재투표 버튼 색상 */
             --button-reset: #f59e0b;
         }
 
@@ -38,7 +39,6 @@
             min-height: 100vh;
             margin: 0;
             background-color: #f0f4f8;
-            /* [수정] 기본 폰트를 Unifont로 변경 */
             font-family: 'Unifont', sans-serif;
             padding: 20px;
         }
@@ -73,7 +73,7 @@
             box-sizing: border-box;
             text-align: center;
             color: var(--text-dark);
-            font-family: 'Unifont', sans-serif; /* 폰트 적용 */
+            font-family: 'Unifont', sans-serif;
         }
 
         .status-panel {
@@ -104,11 +104,11 @@
             border-radius: 8px; color: white; cursor: pointer;
             background-color: var(--button-manage); transition: background-color 0.2s;
             text-align: center;
-            font-family: 'Unifont', sans-serif; /* 폰트 적용 */
+            font-family: 'Unifont', sans-serif;
         }
-        .manage-button:hover { background-color: #434190; }
-        #reset-btn { background-color: var(--button-reset); grid-column: 1 / -1; } /* 초기화 버튼 */
-        #reset-btn:hover { background-color: #d97706; }
+        .manage-button:hover:not(:disabled) { filter: brightness(1.1); }
+        #revote-btn { background-color: var(--button-revote); }
+        #reset-btn { background-color: var(--button-reset); grid-column: 1 / -1; }
         input[type="file"] { display: none; }
 
         .controls { display: flex; gap: 10px; margin: 20px 0; }
@@ -116,7 +116,7 @@
             flex-grow: 1; padding: 12px; font-size: 16px; font-weight: 700;
             border: none; border-radius: 8px; color: white; cursor: pointer;
             transition: background-color 0.2s, opacity 0.2s;
-            font-family: 'Unifont', sans-serif; /* 폰트 적용 */
+            font-family: 'Unifont', sans-serif;
         }
         .control-button:disabled { cursor: not-allowed; opacity: 0.6; }
         #start-vote-btn { background-color: var(--button-action); }
@@ -136,17 +136,16 @@
         .candidate-name-input {
             width: 100%; border: 1px solid #ccc; border-radius: 6px; padding: 8px;
             font-size: 15px; color: var(--text-dark); box-sizing: border-box;
-            font-family: 'Unifont', sans-serif; /* 폰트 적용 */
+            font-family: 'Unifont', sans-serif;
         }
         .candidate-photo { 
             width: 42px; height: 42px; border-radius: 8px; 
             object-fit: cover; background-color: #fff; 
-            border: 2px solid var(--border-color); /* 테두리 두께 수정 */
+            border: 2px solid var(--border-color);
             cursor: pointer; 
             transition: border-color 0.2s, filter 0.2s;
         }
         
-        /* [추가] 드래그 앤 드롭 시각적 피드백 스타일 */
         .candidate-photo.drag-over {
             border-style: dashed;
             border-color: var(--button-primary);
@@ -222,7 +221,8 @@
                 <button id="add-candidate-btn" class="manage-button">후보자 추가</button>
                  <label for="load-json-input" class="manage-button">목록 불러오기</label>
                 <button id="save-json-btn" class="manage-button">후보자 목록 저장</button>
-                <button id="reset-btn" class="manage-button">전체 초기화</button>
+                <button id="revote-btn" class="manage-button">목록으로 재투표</button>
+                <button id="reset-btn" class="manage-button" style="grid-column: 1 / -1;">전체 초기화</button>
                 <input type="file" id="load-json-input" accept=".json">
             </div>
         </div>
@@ -230,7 +230,6 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // HTML 요소들을 변수에 할당
             const ballotUnit = document.getElementById('ballot-unit');
             const statusText = document.getElementById('status-text');
             const readyLed = document.getElementById('ready-led');
@@ -242,9 +241,11 @@
             const saveJsonBtn = document.getElementById('save-json-btn');
             const loadJsonInput = document.getElementById('load-json-input');
             const resetBtn = document.getElementById('reset-btn');
+            const revoteBtn = document.getElementById('revote-btn'); 
             const pollTitleInput = document.getElementById('poll-title-input');
             
             let isVotingActive = false;
+            let voteHasEnded = false; 
             let candidates = [];
             let nextCandidateId = 1;
 
@@ -258,6 +259,7 @@
                 candidates = [];
                 nextCandidateId = 1;
                 isVotingActive = false;
+                voteHasEnded = false;
                 
                 pollTitleInput.value = "";
                 statusText.textContent = "대기 중";
@@ -333,7 +335,7 @@
                 }
             });
 
-            // --- [추가] 이미지 드래그 앤 드롭 이벤트 리스너 ---
+            // --- 이미지 드래그 앤 드롭 이벤트 리스너 ---
             ballotUnit.addEventListener('dragover', (event) => {
                 event.preventDefault();
                 const target = event.target;
@@ -343,10 +345,7 @@
             });
 
             ballotUnit.addEventListener('dragleave', (event) => {
-                const target = event.target;
-                if (target.matches('.candidate-photo')) {
-                    target.classList.remove('drag-over');
-                }
+                event.target.classList.remove('drag-over');
             });
             
             ballotUnit.addEventListener('drop', (event) => {
@@ -409,9 +408,7 @@
                             } else if (Array.isArray(loadedData)) {
                                 candidates = loadedData;
                                 pollTitleInput.value = "";
-                            } else {
-                                throw new Error("Invalid format");
-                            }
+                            } else { throw new Error("Invalid format"); }
                             
                             nextCandidateId = Math.max(...candidates.map(c => c.id), 0) + 1;
                             renderCandidates();
@@ -429,16 +426,18 @@
                 const allNameInputs = ballotUnit.querySelectorAll('.candidate-name-input');
                 const allPhotoLabels = ballotUnit.querySelectorAll('label[for^="photo-input-"]');
                 
-                const isEditable = !isVotingActive;
+                const isEditable = !isVotingActive && !voteHasEnded;
                 addCandidateBtn.disabled = !isEditable;
                 saveJsonBtn.disabled = !isEditable;
                 loadJsonInput.disabled = !isEditable;
                 resetBtn.disabled = isVotingActive;
-                pollTitleInput.disabled = isVotingActive;
+                pollTitleInput.disabled = isVotingActive || voteHasEnded;
 
                 allVoteButtons.forEach(btn => btn.disabled = !isVotingActive);
-                allNameInputs.forEach(input => input.disabled = isVotingActive);
+                allNameInputs.forEach(input => input.disabled = !isEditable);
                 allPhotoLabels.forEach(label => label.style.pointerEvents = isEditable ? 'auto' : 'none');
+
+                revoteBtn.disabled = !voteHasEnded; 
             }
 
             startBtn.addEventListener('click', () => {
@@ -447,6 +446,7 @@
                     return;
                 }
                 isVotingActive = true;
+                voteHasEnded = false;
                 startBtn.disabled = true;
                 endBtn.disabled = false;
                 statusText.textContent = "투표 진행 중";
@@ -456,12 +456,28 @@
 
             endBtn.addEventListener('click', () => {
                 isVotingActive = false;
+                voteHasEnded = true;
                 startBtn.disabled = true;
                 endBtn.disabled = true;
                 statusText.textContent = "투표 종료";
                 readyLed.classList.remove('on');
                 updateButtonsState();
                 displayResults();
+            });
+            
+            revoteBtn.addEventListener('click', () => {
+                voteHasEnded = false;
+                candidates.forEach(c => c.votes = 0); // 득표수만 초기화
+
+                statusText.textContent = "대기 중";
+                resultsPlaceholder.style.display = 'block';
+                resultsList.style.display = 'none';
+                resultsList.innerHTML = '';
+
+                startBtn.disabled = false;
+                endBtn.disabled = true;
+
+                updateButtonsState(); 
             });
 
             ballotUnit.addEventListener('click', (event) => {
