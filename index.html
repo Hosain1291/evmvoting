@@ -131,7 +131,8 @@
         }
 
         .candidate {
-            display: grid; grid-template-columns: 1fr 60px 40px 100px 30px;
+            /* [수정] 삭제 버튼 컬럼 제거 */
+            display: grid; grid-template-columns: 1fr 60px 40px 100px;
             gap: 12px; align-items: center; padding: 10px 8px;
             border-bottom: 1px solid #e2e8f0;
         }
@@ -166,23 +167,6 @@
         .vote-button:hover:not(:disabled) { background-color: var(--button-hover); }
         .vote-button:active:not(:disabled) { transform: translateY(2px); border-bottom-width: 1px; }
         .vote-button:disabled { background-color: var(--button-disabled); cursor: not-allowed; border-bottom: 3px solid #64748b; }
-
-        .delete-btn {
-            background-color: var(--button-stop);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            font-family: sans-serif;
-            font-weight: bold;
-            font-size: 16px;
-            cursor: pointer;
-            transition: background-color 0.2s, opacity 0.2s;
-            justify-self: center;
-        }
-        .delete-btn:hover:not(:disabled) { background-color: #b91c1c; }
-        .delete-btn:disabled { background-color: var(--button-disabled); cursor: not-allowed; opacity: 0.6; }
         
         .right-panel-wrapper {
             width: 350px;
@@ -359,6 +343,7 @@
                     candidateRow.className = 'candidate';
                     candidateRow.dataset.id = candidate.id;
                     
+                    // [수정] 삭제 버튼 HTML 제거
                     candidateRow.innerHTML = `
                         <input type="text" class="candidate-name-input" value="${candidate.name}" placeholder="후보자 이름">
                         <label for="photo-input-${candidate.id}">
@@ -367,7 +352,6 @@
                         <input type="file" class="photo-input" id="photo-input-${candidate.id}" accept="image/*" style="display:none;">
                         <div class="vote-led" id="led-${candidate.id}"></div>
                         <button class="vote-button" data-candidate-id="${candidate.id}"></button>
-                        <button class="delete-btn" data-candidate-id="${candidate.id}">X</button>
                     `;
                     ballotUnit.appendChild(candidateRow);
                 });
@@ -498,7 +482,6 @@
                 const allVoteButtons = ballotUnit.querySelectorAll('.vote-button');
                 const allNameInputs = ballotUnit.querySelectorAll('.candidate-name-input');
                 const allPhotoLabels = ballotUnit.querySelectorAll('label[for^="photo-input-"]');
-                const allDeleteButtons = ballotUnit.querySelectorAll('.delete-btn');
                 
                 const isEditable = !isVotingActive && !voteHasEnded;
                 addCandidateBtn.disabled = isVotingActive || voteHasEnded;
@@ -510,7 +493,6 @@
                 allVoteButtons.forEach(btn => btn.disabled = !isVotingActive);
                 allNameInputs.forEach(input => input.disabled = isVotingActive || voteHasEnded);
                 allPhotoLabels.forEach(label => label.style.pointerEvents = (isVotingActive || voteHasEnded) ? 'none' : 'auto');
-                allDeleteButtons.forEach(btn => btn.disabled = isVotingActive || voteHasEnded); 
 
                 revoteBtn.disabled = !voteHasEnded; 
             }
@@ -591,16 +573,6 @@
                             allButtons.forEach(button => button.disabled = false);
                         }
                     }, 4000);
-                } else if (target.matches('.delete-btn') && !isVotingActive && !voteHasEnded) {
-                    const candidateId = parseInt(target.dataset.candidateId);
-                    const candidateIndex = candidates.findIndex(c => c.id === candidateId);
-                    if (candidateIndex > -1) {
-                        candidates.splice(candidateIndex, 1);
-                        renderCandidates();
-                        if (isVotingActive) {
-                            displayResults(false);
-                        }
-                    }
                 }
             });
 
@@ -613,13 +585,10 @@
                 totalVotesCount.textContent = totalVotes;
                 totalVotesDisplay.style.display = 'block';
 
-                // [수정] 정렬 로직 변경
-                let displayCandidates = [...candidates]; // 원본 배열 유지를 위해 복사본 사용
+                let displayCandidates = [...candidates]; 
                 if (showCounts) {
-                    // 투표 종료 시에만 득표순으로 정렬
                     displayCandidates.sort((a, b) => b.votes - a.votes);
                 } else {
-                    // 투표 중에는 원래 순서(ID 순) 유지
                     displayCandidates.sort((a, b) => a.id - b.id);
                 }
                 
