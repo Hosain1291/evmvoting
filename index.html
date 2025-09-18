@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>전자투표기 시뮬레이터</title>
+    <title>전자투표기 시뮬레이터 (Galmuri14 폰트 적용)</title>
 
     <!-- CSS (스타일) 코드 -->
     <style>
+        /* [수정] Galmuri14 웹 폰트로 변경했습니다. */
         @font-face {
-            font-family: 'RoundedFixedsys';
-            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/DungGeunMo.woff') format('woff');
+            font-family: 'Galmuri14';
+            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2506-1@1.0/Galmuri14.woff2') format('woff2');
             font-weight: normal;
             font-display: swap;
         }
@@ -39,7 +40,7 @@
             min-height: 100vh;
             margin: 0;
             background-color: #f0f4f8;
-            font-family: 'RoundedFixedsys', sans-serif;
+            font-family: 'Galmuri14', sans-serif;
             padding: 20px;
             box-sizing: border-box;
         }
@@ -76,7 +77,7 @@
             box-sizing: border-box;
             text-align: center;
             color: var(--text-dark);
-            font-family: 'RoundedFixedsys', sans-serif;
+            font-family: 'Galmuri14', sans-serif;
         }
 
         .status-panel {
@@ -107,7 +108,7 @@
             border-radius: 8px; color: white; cursor: pointer;
             background-color: var(--button-manage); transition: background-color 0.2s;
             text-align: center;
-            font-family: 'RoundedFixedsys', sans-serif;
+            font-family: 'Galmuri14', sans-serif;
         }
         .manage-button:hover:not(:disabled) { filter: brightness(1.1); }
         #revote-btn { background-color: var(--button-revote); }
@@ -119,7 +120,7 @@
             flex-grow: 1; padding: 12px; font-size: 16px; font-weight: 700;
             border: none; border-radius: 8px; color: white; cursor: pointer;
             transition: background-color 0.2s, opacity 0.2s;
-            font-family: 'RoundedFixedsys', sans-serif;
+            font-family: 'Galmuri14', sans-serif;
         }
         .control-button:disabled { cursor: not-allowed; opacity: 0.6; }
         #start-vote-btn { background-color: var(--button-action); }
@@ -131,7 +132,6 @@
         }
 
         .candidate {
-            /* [수정] 삭제 버튼 컬럼 제거 */
             display: grid; grid-template-columns: 1fr 60px 40px 100px;
             gap: 12px; align-items: center; padding: 10px 8px;
             border-bottom: 1px solid #e2e8f0;
@@ -140,7 +140,7 @@
         .candidate-name-input {
             width: 100%; border: 1px solid #ccc; border-radius: 6px; padding: 8px;
             font-size: 15px; color: var(--text-dark); box-sizing: border-box;
-            font-family: 'RoundedFixedsys', sans-serif;
+            font-family: 'Galmuri14', sans-serif;
         }
         .candidate-photo { 
             width: 42px; height: 42px; border-radius: 8px; 
@@ -343,7 +343,6 @@
                     candidateRow.className = 'candidate';
                     candidateRow.dataset.id = candidate.id;
                     
-                    // [수정] 삭제 버튼 HTML 제거
                     candidateRow.innerHTML = `
                         <input type="text" class="candidate-name-input" value="${candidate.name}" placeholder="후보자 이름">
                         <label for="photo-input-${candidate.id}">
