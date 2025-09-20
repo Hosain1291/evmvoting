@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>전자투표기 시뮬레이터</title>
+    <title>전자투표기 시뮬레이터 (VVPAT 포함)</title>
 
     <!-- CSS (스타일) 코드 -->
     <style>
@@ -167,6 +167,14 @@
         .vote-button:active:not(:disabled) { transform: translateY(2px); border-bottom-width: 1px; }
         .vote-button:disabled { background-color: var(--button-disabled); cursor: not-allowed; border-bottom: 3px solid #64748b; }
         
+        /* [수정] 오른쪽 패널 컨테이너 추가 */
+        .side-panels {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            align-items: center;
+        }
+
         .right-panel-wrapper {
             width: 350px;
             display: flex;
@@ -198,7 +206,6 @@
         .result-item .name { flex-grow: 1; font-weight: 500; }
         .result-item .count { font-weight: 700; background-color: var(--panel-bg); padding: 2px 8px; border-radius: 6px; }
     
-        /* [수정] VVPAT 스타일 작게 조정 */
         .vvpat-machine {
             width: 240px; 
             display: flex;
@@ -245,14 +252,15 @@
         #vvpat-photo { width: 80px; height: 80px; border-radius: 6px; object-fit: cover; }
         #vvpat-name { font-weight: bold; font-size: 20px; color: var(--text-dark); }
 
-        @media (max-width: 1420px) { 
+        /* [수정] 반응형 웹 디자인 미디어 쿼리 */
+        @media (max-width: 980px) { 
             .simulator-wrapper {
                 flex-direction: column;
                 align-items: center;
                 gap: 20px;
             }
 
-            .evm-machine, .right-panel-wrapper, .vvpat-machine {
+            .evm-machine, .side-panels {
                 width: 100%;
                 max-width: 580px;
             }
@@ -292,34 +300,37 @@
             </section>
         </main>
         
-        <aside class="vvpat-machine">
-            <h2>VVPAT</h2>
-            <div class="vvpat-window">
-                <div id="vvpat-slip" class="vvpat-slip">
-                    <img id="vvpat-photo" src="" alt="VVPAT Photo">
-                    <span id="vvpat-id"></span>
-                    <span id="vvpat-name"></span>
+        <!-- [수정] VVPAT와 오른쪽 패널을 묶는 컨테이너 -->
+        <div class="side-panels">
+            <aside class="vvpat-machine">
+                <h2>VVPAT</h2>
+                <div class="vvpat-window">
+                    <div id="vvpat-slip" class="vvpat-slip">
+                        <img id="vvpat-photo" src="" alt="VVPAT Photo">
+                        <span id="vvpat-id"></span>
+                        <span id="vvpat-name"></span>
+                    </div>
                 </div>
-            </div>
-        </aside>
-
-        <div class="right-panel-wrapper">
-            <aside class="results-panel">
-                <h2>투표 집계 현황</h2>
-                <div id="total-votes-display" style="display: none;">
-                    총 투표 수: <span id="total-votes-count">0</span>
-                </div>
-                <div id="results-placeholder">투표 시작 시 실시간 집계가 표시됩니다.</div>
-                <ul id="results-list" style="display: none;"></ul>
             </aside>
 
-            <div class="candidate-management">
-                <button id="add-candidate-btn" class="manage-button">후보자 추가</button>
-                 <label for="load-json-input" class="manage-button">목록 불러오기</label>
-                <button id="save-json-btn" class="manage-button">후보자 목록 저장</button>
-                <button id="revote-btn" class="manage-button">목록으로 재투표</button>
-                <button id="reset-btn" class="manage-button" style="grid-column: 1 / -1;">전체 초기화</button>
-                <input type="file" id="load-json-input" accept=".json">
+            <div class="right-panel-wrapper">
+                <aside class="results-panel">
+                    <h2>투표 집계 현황</h2>
+                    <div id="total-votes-display" style="display: none;">
+                        총 투표 수: <span id="total-votes-count">0</span>
+                    </div>
+                    <div id="results-placeholder">투표 시작 시 실시간 집계가 표시됩니다.</div>
+                    <ul id="results-list" style="display: none;"></ul>
+                </aside>
+
+                <div class="candidate-management">
+                    <button id="add-candidate-btn" class="manage-button">후보자 추가</button>
+                     <label for="load-json-input" class="manage-button">목록 불러오기</label>
+                    <button id="save-json-btn" class="manage-button">후보자 목록 저장</button>
+                    <button id="revote-btn" class="manage-button">목록으로 재투표</button>
+                    <button id="reset-btn" class="manage-button" style="grid-column: 1 / -1;">전체 초기화</button>
+                    <input type="file" id="load-json-input" accept=".json">
+                </div>
             </div>
         </div>
     </div>
