@@ -7,7 +7,6 @@
 
     <!-- CSS (스타일) 코드 -->
     <style>
-        /* [수정] Galmuri14 웹 폰트로 변경했습니다. */
         @font-face {
             font-family: 'Galmuri14';
             src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2506-1@1.0/Galmuri14.woff2') format('woff2');
@@ -52,7 +51,7 @@
             flex-wrap: wrap;
             justify-content: center;
             width: 100%;
-            max-width: 1000px;
+            max-width: 1400px;
         }
 
         .evm-machine {
@@ -175,12 +174,12 @@
             gap: 20px;
         }
 
-        .results-panel {
+        .results-panel, .vvpat-machine {
             background: var(--machine-bg); border: 2px solid var(--border-color);
             border-radius: 16px; padding: 24px; box-sizing: border-box;
             box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
         }
-        .results-panel h2 { margin-top: 0; text-align: center; color: var(--text-dark); }
+        .results-panel h2, .vvpat-machine h2 { margin-top: 0; text-align: center; color: var(--text-dark); }
         #total-votes-display {
             text-align: center;
             font-size: 16px;
@@ -190,10 +189,7 @@
             padding-bottom: 10px;
             border-bottom: 1px solid var(--border-color);
         }
-        #total-votes-count {
-            font-weight: 700;
-            color: var(--text-dark);
-        }
+        #total-votes-count { font-weight: 700; color: var(--text-dark); }
         #results-placeholder { text-align: center; color: var(--text-light); font-size: 16px; padding: 40px 0; }
         #results-list { list-style: none; padding: 0; margin: 0; }
         .result-item { display: flex; align-items: center; gap: 15px; padding: 12px 8px; border-bottom: 1px solid #e2e8f0; }
@@ -202,18 +198,70 @@
         .result-item .name { flex-grow: 1; font-weight: 500; }
         .result-item .count { font-weight: 700; background-color: var(--panel-bg); padding: 2px 8px; border-radius: 6px; }
     
-        @media (max-width: 960px) {
+        /* [수정] VVPAT 스타일 작게 조정 */
+        .vvpat-machine {
+            width: 240px; 
+            display: flex;
+            flex-direction: column;
+        }
+        .vvpat-window {
+            height: 230px; 
+            background-color: #111;
+            border: 4px solid #333;
+            border-radius: 8px;
+            padding: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+        .vvpat-slip {
+            background-color: #fff;
+            padding: 15px 10px;
+            border-radius: 4px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px; 
+            position: absolute;
+            width: calc(100% - 20px);
+            height: calc(100% - 30px);
+            left: 10px;
+            top: 15px;
+            opacity: 0;
+            transform: translateY(-120%);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        .vvpat-slip.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .vvpat-slip.dropping {
+            opacity: 0;
+            transform: translateY(120%);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        #vvpat-id { font-size: 16px; color: var(--text-light); }
+        #vvpat-photo { width: 80px; height: 80px; border-radius: 6px; object-fit: cover; }
+        #vvpat-name { font-weight: bold; font-size: 20px; color: var(--text-dark); }
+
+        @media (max-width: 1420px) { 
             .simulator-wrapper {
                 flex-direction: column;
                 align-items: center;
                 gap: 20px;
             }
 
-            .evm-machine, .right-panel-wrapper {
+            .evm-machine, .right-panel-wrapper, .vvpat-machine {
                 width: 100%;
                 max-width: 580px;
             }
-
+            .vvpat-machine {
+                height: auto;
+            }
+            .vvpat-window {
+                height: 250px;
+            }
             .ballot-unit {
                 max-height: 50vh;
             }
@@ -243,6 +291,17 @@
                 <!-- 후보자 목록이 이곳에 생성됩니다. -->
             </section>
         </main>
+        
+        <aside class="vvpat-machine">
+            <h2>VVPAT</h2>
+            <div class="vvpat-window">
+                <div id="vvpat-slip" class="vvpat-slip">
+                    <img id="vvpat-photo" src="" alt="VVPAT Photo">
+                    <span id="vvpat-id"></span>
+                    <span id="vvpat-name"></span>
+                </div>
+            </div>
+        </aside>
 
         <div class="right-panel-wrapper">
             <aside class="results-panel">
@@ -283,6 +342,11 @@
             const totalVotesDisplay = document.getElementById('total-votes-display');
             const totalVotesCount = document.getElementById('total-votes-count');
             
+            const vvpatSlip = document.getElementById('vvpat-slip');
+            const vvpatId = document.getElementById('vvpat-id');
+            const vvpatPhoto = document.getElementById('vvpat-photo');
+            const vvpatName = document.getElementById('vvpat-name');
+
             let isVotingActive = false;
             let voteHasEnded = false; 
             let candidates = [];
@@ -361,7 +425,7 @@
                 const newCandidate = {
                     id: nextCandidateId++,
                     name: `후보자 ${nextCandidateId - 1}`,
-                    imgSrc: `https://placehold.co/40x40/EFEFEF/333333?text=${nextCandidateId - 1}`,
+                    imgSrc: `https://placehold.co/80x80/EFEFEF/333333?text=${nextCandidateId - 1}`,
                     votes: 0
                 };
                 candidates.push(newCandidate);
@@ -561,12 +625,23 @@
                     const votedLed = document.getElementById(`led-${candidateId}`);
                     votedLed.classList.add('on');
                     
-                    statusText.textContent = "투표 처리 중... (4초 대기)";
+                    statusText.textContent = "투표 확인 중... (4초 대기)";
                     const allButtons = ballotUnit.querySelectorAll('.vote-button');
                     allButtons.forEach(button => button.disabled = true);
                     
+                    vvpatId.textContent = `기호 : ${candidate.id}`;
+                    vvpatPhoto.src = candidate.imgSrc;
+                    vvpatName.textContent = candidate.name;
+                    vvpatSlip.classList.add('visible');
+
                     setTimeout(() => {
                         votedLed.classList.remove('on');
+                        vvpatSlip.classList.add('dropping');
+                        
+                        setTimeout(() => {
+                            vvpatSlip.classList.remove('visible', 'dropping');
+                        }, 500);
+
                         if (isVotingActive) {
                             statusText.textContent = "투표 진행 중";
                             allButtons.forEach(button => button.disabled = false);
