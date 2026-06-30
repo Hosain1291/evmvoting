@@ -41,14 +41,15 @@
 
         .simulator-wrapper {
             display: flex;
-            gap: 30px;
+            gap: 24px;
             align-items: flex-start;
             flex-wrap: wrap;
             justify-content: center;
         }
 
+        /* 1. EVM 투표 패널 */
         .evm-machine {
-            width: 580px;
+            width: 540px;
             max-width: 95%;
             background: var(--machine-bg);
             border: 2px solid var(--border-color);
@@ -78,7 +79,7 @@
             border: 1px solid var(--border-color);
         }
         .status-indicator { display: flex; align-items: center; gap: 10px; }
-        #status-text { font-size: 18px; font-weight: 700; color: var(--text-dark); }
+        #status-text { font-size: 16px; font-weight: 700; color: var(--text-dark); }
         .led { width: 22px; height: 22px; border-radius: 50%; }
         #ready-led { background-color: #6b7280; border: 2px solid #4b5563; }
         #ready-led.on { background-color: var(--led-ready); border-color: #059669; box-shadow: 0 0 12px var(--led-ready); }
@@ -101,7 +102,7 @@
             text-align: center;
         }
         .manage-button:hover { background-color: #434190; }
-        #reset-btn { background-color: var(--button-reset); grid-column: 1 / -1; } /* 초기화 버튼 */
+        #reset-btn { background-color: var(--button-reset); grid-column: 1 / -1; }
         #reset-btn:hover { background-color: #d97706; }
         input[type="file"] { display: none; }
 
@@ -115,7 +116,6 @@
         #start-vote-btn { background-color: var(--button-action); }
         #end-vote-btn { background-color: var(--button-stop); }
         
-        /* 투표 후보자 기기 영역 - 스크롤바 제거를 위해 max-height 및 overflow 속성 제거 */
         .ballot-unit {
             background-color: #f8fafc; border: 1px solid var(--border-color);
             border-radius: 10px; padding: 8px;
@@ -144,7 +144,130 @@
         .vote-button:hover:not(:disabled) { background-color: var(--button-hover); }
         .vote-button:active:not(:disabled) { transform: translateY(2px); border-bottom-width: 1px; }
         .vote-button:disabled { background-color: var(--button-disabled); cursor: not-allowed; border-bottom: 3px solid #64748b; }
+
+        /* 2. VVPAT 실시간 종이 확인증 출력기 패널 */
+        .vvpat-unit {
+            width: 250px;
+            background: linear-gradient(145deg, #cbd5e1, #e2e8f0);
+            border: 2px solid var(--border-color);
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-self: stretch;
+        }
+        .vvpat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #475569;
+            padding: 8px 12px;
+            border-radius: 8px;
+            color: white;
+            font-size: 13px;
+            font-weight: 700;
+        }
+        .vvpat-led {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background-color: #6b7280;
+            border: 1px solid #334155;
+            transition: background-color 0.2s, box-shadow 0.2s;
+        }
+        .vvpat-display-window {
+            height: 250px;
+            background-color: #0f172a;
+            border: 4px solid #334155;
+            border-radius: 10px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.7);
+        }
+        .vvpat-display-window::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 60%);
+            pointer-events: none;
+            z-index: 5;
+        }
+        .vvpat-slip {
+            width: 85%;
+            background-color: #ffffff;
+            border: 1px solid #cbd5e1;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            padding: 14px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            transform: translateY(-110%);
+            transition: transform 1s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s;
+            font-size: 12px;
+            color: #334155;
+            text-align: center;
+            border-bottom: 2px dashed #94a3b8;
+            margin-top: 10px;
+        }
+        .vvpat-slip.printing {
+            transform: translateY(10px);
+        }
+        .vvpat-slip.dropping {
+            transform: translateY(270px);
+            opacity: 0;
+            transition: transform 0.6s cubic-bezier(0.55, 0.055, 0.675, 0.19), opacity 0.4s;
+        }
+        .vvpat-slip-header {
+            font-weight: bold;
+            font-size: 11px;
+            color: #475569;
+            border-bottom: 1px solid #e2e8f0;
+            width: 100%;
+            padding-bottom: 6px;
+            letter-spacing: 1px;
+        }
+        .vvpat-slip-photo {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+            margin: 4px 0;
+        }
+        .vvpat-slip-name {
+            font-size: 14px;
+            font-weight: bold;
+            color: #1e293b;
+        }
+        .vvpat-slip-footer {
+            font-size: 9px;
+            color: #94a3b8;
+            border-top: 1px dashed #e2e8f0;
+            width: 100%;
+            padding-top: 6px;
+        }
+        .vvpat-drop-box {
+            background-color: #334155;
+            color: #94a3b8;
+            font-size: 12px;
+            font-weight: 700;
+            text-align: center;
+            padding: 12px;
+            border-radius: 8px;
+            border: 2px solid #1e293b;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
+            letter-spacing: 1px;
+        }
         
+        /* 3. 오른쪽 집계/관리단 패널 */
         .right-panel-wrapper {
             width: 350px;
             display: flex;
@@ -166,7 +289,7 @@
         .result-item .name { flex-grow: 1; font-weight: 500; }
         .result-item .count { font-weight: 700; background-color: var(--panel-bg); padding: 2px 8px; border-radius: 6px; }
 
-        /* 세련된 수제 토스트 메시지 스타일 */
+        /* 토스트 알림창 */
         .toast-container {
             position: fixed;
             bottom: 30px;
@@ -193,6 +316,7 @@
 <body>
 
     <div class="simulator-wrapper">
+        <!-- 1. EVM 투표 기기 -->
         <main class="evm-machine">
             <input type="text" id="poll-title-input" placeholder="투표 주제를 입력하세요...">
 
@@ -214,6 +338,26 @@
             </section>
         </main>
 
+        <!-- 2. VVPAT 출력 검증장치 (추가됨!) -->
+        <section class="vvpat-unit">
+            <div class="vvpat-header">
+                <span>VVPAT 확인기</span>
+                <div id="vvpat-led" class="vvpat-led"></div>
+            </div>
+            <div class="vvpat-display-window">
+                <div id="vvpat-slip" class="vvpat-slip">
+                    <div class="vvpat-slip-header">선거관리위원회 검증필</div>
+                    <img id="vvpat-slip-photo" src="" alt="후보" class="vvpat-slip-photo" style="display:none;">
+                    <div id="vvpat-slip-name" class="vvpat-slip-name">대기 중</div>
+                    <div class="vvpat-slip-footer">내용 확인용 (DROP BOX 자동 보관)</div>
+                </div>
+            </div>
+            <div class="vvpat-drop-box">
+                <span>SECURE DROP BOX</span>
+            </div>
+        </section>
+
+        <!-- 3. 오른쪽 결과 및 관리 패널 -->
         <div class="right-panel-wrapper">
             <aside class="results-panel">
                 <h2>투표 집계 현황</h2>
@@ -233,7 +377,7 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // HTML 요소들을 변수에 할당
+            // HTML 요소 바인딩
             const ballotUnit = document.getElementById('ballot-unit');
             const statusText = document.getElementById('status-text');
             const readyLed = document.getElementById('ready-led');
@@ -246,6 +390,12 @@
             const loadJsonInput = document.getElementById('load-json-input');
             const resetBtn = document.getElementById('reset-btn');
             const pollTitleInput = document.getElementById('poll-title-input');
+
+            // VVPAT 요소 바인딩
+            const vvpatSlip = document.getElementById('vvpat-slip');
+            const vvpatSlipPhoto = document.getElementById('vvpat-slip-photo');
+            const vvpatSlipName = document.getElementById('vvpat-slip-name');
+            const vvpatLed = document.getElementById('vvpat-led');
             
             let isVotingActive = false;
             let candidates = [];
@@ -263,7 +413,6 @@
                 toast.textContent = message;
                 toast.classList.add('show');
                 
-                // 기존 타이머가 있으면 초기화 후 다시 설정
                 if (toast.timeoutId) {
                     clearTimeout(toast.timeoutId);
                 }
@@ -293,6 +442,13 @@
                 
                 startBtn.disabled = false;
                 endBtn.disabled = true;
+
+                // VVPAT 초기화
+                vvpatSlip.className = 'vvpat-slip';
+                vvpatSlipPhoto.style.display = 'none';
+                vvpatSlipName.textContent = "대기 중";
+                vvpatLed.style.backgroundColor = '#6b7280';
+                vvpatLed.style.boxShadow = 'none';
 
                 renderCandidates();
                 showToast("모든 데이터가 초기화되었습니다.");
@@ -388,7 +544,6 @@
                     reader.onload = (e) => {
                         try {
                             const loadedData = JSON.parse(e.target.result);
-                            // 새로운 포맷과 예전 포맷(배열) 호환
                             if (loadedData.candidates && Array.isArray(loadedData.candidates)) {
                                 candidates = loadedData.candidates;
                                 pollTitleInput.value = loadedData.title || "";
@@ -453,6 +608,7 @@
                 showToast("투표가 마감되었습니다. 집계 결과를 확인하세요.");
             });
 
+            // 투표 버튼 클릭 시 동작 (VVPAT 연동 부분)
             ballotUnit.addEventListener('click', (event) => {
                 const target = event.target;
                 if (target.matches('.vote-button') && isVotingActive) {
@@ -461,20 +617,44 @@
                     
                     candidate.votes++;
                     
+                    // 1. 투표기(EVM) 붉은 LED 점등
                     const votedLed = document.getElementById(`led-${candidateId}`);
                     votedLed.classList.add('on');
                     
-                    statusText.textContent = "투표 처리 중... (4초 대기)";
+                    // 2. VVPAT 인쇄 및 확인증 표시 프로세스 시작
+                    vvpatSlipName.textContent = candidate.name;
+                    vvpatSlipPhoto.src = candidate.imgSrc;
+                    vvpatSlipPhoto.style.display = 'block';
+                    vvpatSlip.className = 'vvpat-slip printing'; // 슬립 인쇄 슬라이드 애니메이션
+
+                    // VVPAT 작동 LED 붉은색 점등
+                    vvpatLed.style.backgroundColor = 'var(--led-vote)';
+                    vvpatLed.style.boxShadow = '0 0 10px var(--led-vote)';
+
+                    statusText.textContent = "VVPAT 용지 출력 확인 중... (4초 대기)";
                     const allButtons = ballotUnit.querySelectorAll('.vote-button');
                     allButtons.forEach(button => button.disabled = true);
                     
+                    // 3.5초 후 확인 완료, 용지가 DROP BOX로 낙하하는 애니메이션 수행
+                    setTimeout(() => {
+                        vvpatSlip.className = 'vvpat-slip dropping'; // 낙하 애니메이션
+                        vvpatLed.style.backgroundColor = '#6b7280';
+                        vvpatLed.style.boxShadow = 'none';
+                    }, 3400);
+
+                    // 4.2초 후 모든 상태 초기화 및 다음 투표 대기 상태 전환
                     setTimeout(() => {
                         votedLed.classList.remove('on');
                         if (isVotingActive) {
                             statusText.textContent = "투표 진행 중";
                             allButtons.forEach(button => button.disabled = false);
                         }
-                    }, 4000);
+                        
+                        // VVPAT 슬립 상태 완전히 보이지 않는 상태로 리셋
+                        vvpatSlip.className = 'vvpat-slip';
+                        vvpatSlipPhoto.style.display = 'none';
+                        vvpatSlipName.textContent = "대기 중";
+                    }, 4200);
                 }
             });
 
@@ -484,7 +664,6 @@
                 resultsList.style.display = 'block';
                 resultsList.innerHTML = ''; 
 
-                // 원본 데이터를 오염시키지 않기 위해 복사하여 정렬
                 const sortedCandidates = [...candidates].sort((a, b) => b.votes - a.votes);
                 
                 sortedCandidates.forEach(candidate => {
